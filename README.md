@@ -1,80 +1,193 @@
-# Mars Explorer
+# Mars Explorer — 3D Planetary Exploration & Mission Planning Platform
 
-An interactive 3D Martian planetary exploration, NASA dataset visualization, terrain hazard analysis, and mission-planning web application built with React, TypeScript, CesiumJS, and Express.
+An interactive 3D Martian exploration, NASA Open API visualization, terrain hazard analysis, and mission route-planning dashboard built with **React 19**, **TypeScript**, **Vite**, **Tailwind CSS v4**, **CesiumJS**, and an **Express** API proxy (with native **Vercel** serverless support).
 
-Centered on **Jezero Crater** with full global coverage, Mars Explorer combines NASA Mars Trek WMTS mosaics, USGS Astrogeology overlays, NASA/JPL MMGIS rover traverse archives, official NASA 3D GLB spacecraft models, terrain-aware A* pathfinding, and three real-time 3D mission simulators (Flight, Rover, and Orbital Satellite).
+The globe is configured on the **Mars 2000 IAU Sphere** (`R = 3,396,190 m`) so planetocentric coordinates, NASA Mars Trek WMTS mosaics, USGS global geology, and NASA/JPL MMGIS rover traverses align with ze# Mars Explorer — 3D Planetary Exploration & Mission Planning Platform
 
-> **Scientific Disclaimer:** Terrain analysis and route planning are intended for exploration, research, and mission-planning prototyping. They are **not** certified for operational astronaut or robotic navigation.
+An interactive 3D Martian exploration, NASA Open API visualization, terrain hazard analysis, and mission route-planning dashboard built with **React 19**, **TypeScript**, **Vite**, **Tailwind CSS v4**, **CesiumJS**, and an **Express** API proxy (with native **Vercel** serverless support).
+
+The globe is configured on the **Mars 2000 IAU Sphere** (`R = 3,396,190 m`) so planetocentric coordinates, NASA Mars Trek WMTS mosaics, USGS global geology, and NASA/JPL MMGIS rover traverses align with zero latitude offset.
 
 ---
 
-## Features
+## Key Features
 
-### 3D Mars Globe & Scientific Data Layers
-- **CesiumJS Planetary Globe** configured for the Mars 2000 IAU datum ($R = 3{,}396{,}190\text{ m}$) with optional 3D terrain, coordinate graticule, split-screen layer comparison, and camera history (back/forward).
-- **13 Scientific & Imagery Layers** served through a CORS-safe Express proxy with in-memory tile caching:
-  - **Basemaps & High-Res Imagery:** Viking MDIM 2.1 Global Color Mosaic (232 m/px), MRO CTX Jezero Crater Mosaic (6 m/px), MRO HiRISE Jezero Crater Orthomosaic (25 cm/px)
-  - **Topography:** MOLA Color Shaded Relief (463 m/px), MOLA + MEX HRSC Blended Color & Shaded Relief (200 m/px), MOLA Pulse-Width Surface Roughness
-  - **Thermal:** Mars Odyssey THEMIS Daytime & Nighttime Infrared Controlled Mosaics (100 m/px)
-  - **Mineralogy & Geology:** MRO CRISM Mineralogical & Aqueous Detections (smectite clays, Mg-carbonate, olivine, pyroxene), USGS SIM 3292 Global Geologic Map of Mars
-  - **Atmosphere & Analysis:** MGS TES Surface Dust Cover Index, computed Jezero Slope & Terrain Hazard Classification
+### 1. 3D Mars Globe & NASA Mars Trek WMTS Imagery
+- **Planetary Datum**: Custom `Mars_2000_Sphere_IAU` ellipsoid and `GeographicProjection` in CesiumJS (`src/components/MarsGlobe.tsx`).
+- **13 Scientific Layers** (`src/data/layers.ts`):
+  - **Basemaps & Topography**: Viking MDIM 2.1 Global Color Mosaic (`232 m/px`), MOLA Color Shaded Relief (`463 m/px`), MOLA + HRSC Blended Color & Hillshade (`200 m/px`), MOLA Pulse-Width Surface Roughness.
+  - **High-Resolution Jezero Sector**: MRO CTX Controlled Mosaic (`6 m/px`) and MRO HiRISE Orthomosaic (`25 cm/px`) with Martian regolith color enhancement and 3D Jezero relief heightmap.
+  - **Thermal, Mineralogy, Geology & Dust**: Mars Odyssey THEMIS Day IR & Night IR (`100 m/px`), MRO CRISM mineralogical footprints, USGS SIM 3292 Global Geologic Map, MGS TES Surface Dust Cover Index, and computed Jezero Slope & Hazard grid.
+- **Map Tools**: Bottom-left basemap sensor switcher, split-screen layer comparison slider, camera history (back/forward), graticule toggle, dynamic metric scale bar, and live cursor lat/lon + elevation readout.
 
-### Historical Missions & 3D Spacecraft Models
-- Tracks **14 Mars missions** across rovers, helicopters, landers, and orbiters:
-  - *Rovers & Rotorcraft:* Perseverance (Mars 2020), Ingenuity Mars Helicopter, Curiosity (MSL), Zhurong (Tianwen-1), Opportunity (MER-B), Spirit (MER-A), Mars Pathfinder & Sojourner
-  - *Landers:* InSight, Phoenix, Viking 1, Viking 2
-  - *Orbiters:* Mars Reconnaissance Orbiter (MRO), 2001 Mars Odyssey, Mars Global Surveyor (MGS)
-- Live proxy integration with **NASA/JPL MMGIS** historical waypoints and traverses for **Perseverance (M20)** and **Curiosity (MSL)**.
-- Official `.glb` 3D spacecraft and rover models fetched and cached via `/api/models/:modelKey` from `NASA-3D-Resources`.
+### 2. NASA Mars Image Gallery (`images-api.nasa.gov` + `api.nasa.gov/planetary/apod`)
+- Accessible from the top navigation bar (**Gallery** / **Optics**).
+- Preset mission/terrain queries (Perseverance Jezero, Curiosity Gale, MRO HiRISE, Ingenuity, Canyons & Volcanoes, Global Views) plus free-text search.
+- Displays title, description, ISO date, NASA center, and NASA ID with loading skeletons, error retry, empty-state reset, **Load More** pagination, optional **NASA APOD** briefing banner, and a full-resolution lightbox viewer (`/api/nasa/image-asset/:nasaId`).
 
-### Terrain-Aware Mission Route Planner & Export
-- **Jezero Crater Elevation Grid (`/api/elevation/jezero-grid`):** $140 \times 112$ topographic grid combining regional MOLA/HiRISE Jezero DTM features (Delta Scarp, Belva Crater, Séítah, Neretva Vallis, Kodiak Butte, Western Rim) with Gaussian-tapered IDW blending of measured NASA M20 Perseverance waypoint elevations and explicit data-quality flagging.
-- **Terrain-Aware A\* Pathfinding:** Generates and compares routes across 5 optimization modes:
-  - `low_difficulty` (balanced distance, slope, roughness, and hazards)
-  - `avoid_slopes`
-  - `avoid_hazards` (buffers around Belva Crater walls, Séítah dunes, delta scarps, and crater rims)
-  - `visit_science` (rewards proximity to cataloged Scientific POIs)
-  - `shortest`
-- **Interactive Elevation Profile & Reports:** Inspect elevation, slope, roughness, and risk along any route, then export mission plans as **GeoJSON**, **CSV**, or **PDF** (via `jsPDF`).
+### 3. Interactive Exploration Locations & Mission Telemetry
+- Verified planetary landing sites, craters, canyons, volcanoes, and orbital missions rendered as interactive markers (`src/data/locations.ts`, `src/data/missions.ts`).
+- Selecting a marker opens a detailed briefing in the right panel (`src/components/RightSidebar.tsx`) showing verified coordinates, MOLA elevation, geological context, source attribution, camera **Focus** control, and associated mission archive metadata.
+- Live historical rover traverse lines and waypoint mosaics fetched from **NASA/JPL MMGIS** for **Perseverance (M20)** and **Curiosity (MSL)**, plus official **NASA-3D-Resources** `.glb` spacecraft/rover models.
 
-### Interactive 3D Simulators
-1. **Mars Flight Simulator:** Fly the **Ingenuity Mars Scout** (coaxial rotorcraft) or **Ares Supersonic Wing** over Jezero Crater in chase or cockpit view with keyboard/touch flight controls, telemetry HUD, and Web Audio cues.
-2. **Astronaut Rover Simulator:** Drive the **Perseverance Utility Chassis** along planned A\* corridors in Autopilot or Manual mode (`1x`, `5x`, `20x` time scale), monitoring slope, wheel RPM, power draw, battery/oxygen reserves, and UHF relay link status across presets or custom globe-picked endpoints.
-3. **Satellite Orbital Transit Simulator:** Simulate sun-synchronous reconnaissance passes with **MRO**, **2001 Mars Odyssey**, or **Mars Global Surveyor** (`1x`–`200x` time scale) with chase, nadir, and horizon cameras, swath scanning, solar power, and downlink telemetry.
+### 4. Environmental, Climate & Live Space Weather Data
+- **Climate** tab in `src/components/LeftSidebar.tsx` clearly separates:
+  1. **Live NASA DONKI Heliospheric & Radiation Context** (`/api/nasa/space-weather`): 30-day rolling CME count, SEP count, Mars-directed CME screening, and recent CCMC DONKI alerts.
+  2. **Historical Surface Meteorology Archives**: Documented NASA PDS ranges from Perseverance MEDA, Curiosity REMS, and InSight TWINS.
+  3. **Modeled / Regional Estimates**: MOLA/MCD seasonal surface pressure and elevation references.
 
-### NASA Imagery & Space Weather Integration
-- **Mars Gallery:** Searchable photo browser powered by the **NASA Image and Video Library** (`images-api.nasa.gov`) with high-resolution asset manifest resolution and optional **NASA APOD** highlights.
-- **Space Weather Context:** 30-day heliospheric CME, SEP, and notification alerts via **NASA DONKI** (`api.nasa.gov`).
-- **Mars Trek Nomenclature Search:** Search planetary features via the NASA Mars Trek Solr index.
+### 5. Terrain Hazard Analysis, Route Planner & 3D Simulators
+- **Jezero Elevation & Traversability Analysis** (`src/analysis/`): Horn gradient slope calculation, terrain risk scoring, and A* multi-objective route planning (`Low Difficulty`, `Avoid Slopes`, `Avoid Hazards`, `Visit Science`, `Shortest`).
+- **Elevation Profile & Report Export**: Interactive route elevation chart (`src/components/BottomPanel.tsx`) and mission briefing export to **PDF** (`jspdf`) or **JSON** (`src/services/reportExport.ts`).
+- **60 fps 3D Simulators**:
+  - **Flight Simulator** (`FlightSimulatorHUD.tsx`): Ingenuity / Mars Aero flight over Jezero Crater.
+  - **Rover Traverse Simulator** (`RoverSimulatorHUD.tsx`): 6-wheel rocker-bogie surface drive along planned routes or free exploration.
+  - **Satellite Transit Simulator** (`SatelliteSimulatorHUD.tsx`): Orbital pass and ground-swath scanning simulation.
 
 ---
 
 ## Tech Stack
 
-- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS v4, CesiumJS (`cesium`), Lucide Icons, Motion, jsPDF
-- **Backend:** Node.js, Express (`server.ts` serving Vite middleware in dev and static `dist/` in production)
-- **External APIs Proxied by Server:**
-  - NASA Mars Trek WMTS & Solr Index (`trek.nasa.gov`)
-  - USGS Astrogeology Mars WMS (`planetarymaps.usgs.gov`)
-  - NASA/JPL MMGIS Archives (`mars.nasa.gov/mmgis-maps`)
-  - NASA Image and Video Library (`images-api.nasa.gov`)
-  - NASA Open APIs — DONKI & APOD (`api.nasa.gov`)
-  - NASA 3D Resources GLB Repository (`github.com/nasa/NASA-3D-Resources`)
+- **Frontend**: React 19, TypeScript, Vite 8, Tailwind CSS v4, CesiumJS 1.147, Lucide React, Motion, jsPDF
+- **Backend / Proxy**: Node.js, Express 4 (`tsx`), `dotenv`
+- **Deployment**: Local Express server (`server.ts`) or Vercel Static + Serverless Catch-All (`api/[...path].ts` + `vercel.json`)
 
 ---
 
 ## Project Structure
 
 ```text
-├── server.ts                  # Express server, NASA/USGS proxies, caching & Cesium static assets
-├── vite.config.ts             # Vite + Tailwind + Cesium static copy configuration
-├── index.html                 # App entry HTML & font imports
+├── api/
+│   └── [...path].ts            # Vercel Serverless Function catch-all for /api/*
+├── public/
+│   └── assets/                 # Static UI assets
+├── server/
+│   └── createApiApp.ts         # Shared Express API routes, caching & NASA proxies
 ├── src/
-│   ├── App.tsx                # Main state orchestration, globe, drawers & simulator modes
-│   ├── analysis/              # Elevation sampling, Horn slope/roughness, risk scoring & A* routing
-│   ├── components/            # TopNav, MarsGlobe, Sidebars, BottomPanel, HUDs, Gallery & Modals
-│   ├── data/                  # Layer configs, missions, locations, geology/POIs & simulator presets
-│   ├── services/              # API clients (NASA images, DONKI, MMGIS, Trek) & PDF/CSV/GeoJSON export
-│   ├── types/                 # TypeScript interfaces for Mars terrain, routes & simulators
-│   └── utils/                 # Mars spherical coordinates, distance/bearing & surface synthesis
-└── public/assets/             # Static assets
+│   ├── analysis/               # Elevation sampling, Horn slope, risk score, A* pathfinding
+│   ├── components/             # MarsGlobe, LeftSidebar, RightSidebar, BottomPanel,
+│   │                           # MarsGallery, TopNav, Modals, Simulator HUDs
+│   ├── data/                   # Verified layers, locations, missions, geology, simulator courses
+│   ├── services/               # nasaImageService, nasaMarsService, marsMapService, marsApi, reportExport
+│   ├── types/                  # TypeScript domain interfaces (mars.ts)
+│   ├── utils/                  # Mars coordinate math & procedural surface synthesis
+│   ├── App.tsx
+│   ├── index.css
+│   └── main.tsx                # Sets window.CESIUM_BASE_URL = '/cesiumStatic/'
+├── index.html
+├── package.json
+├── server.ts                   # Local/Node Express server (API + Cesium static + Vite/dist)
+├── tsconfig.json
+├── vercel.json                 # Vercel build output, headers & SPA rewrites
+└── vite.config.ts              # Vite + Tailwind + Cesium static asset copy config
+```
+
+---
+
+## Prerequisites
+
+- **Node.js** `>= 20.x` (uses built-in global `fetch` and `AbortSignal.timeout`)
+- **npm** (or **bun**; a `bun.lock` is included)
+- A free **NASA API Key** from [https://api.nasa.gov/](https://api.nasa.gov/) (required for `/api/nasa/space-weather` and `/api/nasa/apod`; Mars Trek tiles, MMGIS telemetry, elevation grid, and NASA Image Library work without a key)
+
+---
+
+## Running Locally
+
+### 1. Install dependencies
+```bash
+npm install
+```
+*(Or with Bun: `bun install`)*
+
+### 2. Configure environment variables
+Create a `.env` file in the project root based on `.env.example`:
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and add your NASA API key:
+```env
+NASA_API_KEY="your_nasa_api_key_here"
+```
+> **Security note**: `.env*` files are gitignored. `NASA_API_KEY` is only read server-side in `server/createApiApp.ts` and is never exposed to frontend client bundles.
+
+### 3. Start the development server
+```bash
+npm run dev
+```
+This runs `tsx server.ts`, starting the Express API proxy, `/cesiumStatic` asset server, and Vite dev middleware on:
+- **App URL**: `http://localhost:3000`
+- **Health check**: `http://localhost:3000/api/health`
+
+*(Optional custom port)*:
+```bash
+PORT=3000 npm run dev
+```
+
+### 4. Production build & local production preview
+Build the client bundle and copy Cesium static assets (`Assets`, `ThirdParty`, `Widgets`, `Workers`) into `dist/cesiumStatic/`:
+```bash
+npm run build
+```
+
+Run the compiled production app locally with Express serving both `dist/` and `/api/*`:
+```bash
+NODE_ENV=production npm run start
+```
+Then open `http://localhost:3000`.
+
+### 5. Typecheck & clean
+```bash
+# TypeScript typecheck (tsc --noEmit)
+npm run lint
+
+# Remove dist/ and build artifacts
+npm run clean
+```
+
+---
+
+## Backend API Endpoints
+
+All external NASA/USGS requests go through the Express app (`server/createApiApp.ts`) with in-memory TTL caching and CORS-safe headers:
+
+| Endpoint | Upstream Source | Purpose |
+| --- | --- | --- |
+| `GET /api/health` | Local server | Service status & `nasaApiConfigured` boolean flag |
+| `GET /api/tiles/trek/:layer/:z/:y/:file` | `trek.nasa.gov` | CORS-safe WMTS & ArcGIS REST (`SIM3292_Global_Geology`) tile proxy (1h cache) |
+| `GET /api/tiles/usgs` | `planetarymaps.usgs.gov` | USGS Astrogeology Mars WMS proxy |
+| `GET /api/models/:modelKey` | `github.com/nasa/NASA-3D-Resources` | Official NASA rover/orbiter `.glb` models (302 redirect on Vercel) |
+| `GET /api/missions/:missionId/telemetry` | `mars.nasa.gov/mmgis-maps` | Historical waypoints & traverse paths (`perseverance`, `curiosity`) |
+| `GET /api/trek/search?q=` | `trek.nasa.gov` Solr index | Mars Trek nomenclature & dataset search |
+| `GET /api/nasa/images` | `images-api.nasa.gov/search` | Paginated Mars image archive search (HTTPS-normalized URLs) |
+| `GET /api/nasa/image-asset/:nasaId` | `images-api.nasa.gov/asset` | High-resolution (`~orig` / `~large`) image manifest lookup |
+| `GET /api/nasa/space-weather` | `api.nasa.gov/DONKI` | Rolling 30-day CME, SEP, notification alerts & Mars impact screening |
+| `GET /api/nasa/apod` | `api.nasa.gov/planetary/apod` | NASA Astronomy Picture of the Day highlight |
+| `GET /api/elevation/jezero-grid` | NASA M20 MMGIS + MOLA model | 140×112 Jezero Crater elevation & data-quality grid |
+
+---
+
+## Deploying to Vercel
+
+The repository includes `vercel.json` and `api/[...path].ts` so both the CesiumJS static assets and `/api/*` backend work out of the box on Vercel:
+
+1. Import the repository into Vercel (Framework Preset: **Vite**).
+2. Keep the default build configuration (already specified in `vercel.json`):
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+3. In Vercel **Project Settings → Environment Variables**, add:
+   - `NASA_API_KEY` = your key from `https://api.nasa.gov/`
+4. Deploy. `api/[...path].ts` handles all `/api/*` routes as a Vercel Serverless Function, while `dist/cesiumStatic/` serves Cesium Web Workers, WASM decoders, and IAU orientation tables directly from the CDN.
+
+---
+
+## Troubleshooting
+
+- **Globe is blank or tiles fail locally**:
+  - Make sure you run `npm run dev` (or `NODE_ENV=production npm run start` after `npm run build`) rather than `vite preview` alone, because `vite preview` does not mount the `/api/*` proxy routes.
+  - Check `http://localhost:3000/api/health` to confirm the Express backend is running.
+- **DONKI Space Weather or APOD returns 503**:
+  - Verify `NASA_API_KEY` is set in `.env` (local) or Vercel **Environment Variables** (production), then restart the dev server / redeploy.
+- **Cesium assets 404 after custom build edits**:
+  - Run `npm run clean && npm run build` and verify `dist/cesiumStatic/Workers/`, `dist/cesiumStatic/Assets/`, `dist/cesiumStatic/ThirdParty/`, and `dist/cesiumStatic/Widgets/` exist directly under `dist/cesiumStatic/`.
